@@ -78,8 +78,58 @@ public class SimpleKeyboardService extends InputMethodService {
 	}
 
 	@Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+	TryStartEnforcedService();
+    return START_STICKY;
+    }
+
+	private void startEnforcedService() {
+	Context context = this;
+    NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+    String pkg = context.getPackageName();    
+
+    List<NotificationChannel> channels = nm.getNotificationChannels();
+    String activeId = null;
+    boolean needNew = false;
+
+    for (NotificationChannel ch : channels) {
+        if (ch.getImportance() == NotificationManager.IMPORTANCE_NONE) {
+            nm.deleteNotificationChannel(ch.getId());
+            needNew = true;
+        } else if (activeId == null) {
+            activeId = ch.getId();
+        }
+    }
+
+    if (needNew || activeId == null) {
+        activeId = "duress.keyboard" + Long.toHexString(new java.security.SecureRandom().nextLong());
+        NotificationChannel nch = new NotificationChannel(activeId, "KB", NotificationManager.IMPORTANCE_DEFAULT);
+        nm.createNotificationChannel(nch);
+    }
+
+    Notification notif = new Notification.Builder(context, activeId)
+            .setContentTitle("App is started") //this notification will be displayed only if allowed. User can dont allow notifications for this app if want hide app activity or just block all notifications on the lock screen. foreground service can be started without notifications permission.
+            .setContentText("keyboard")
+            .setSmallIcon(android.R.drawable.ic_lock_lock)
+            .setOngoing(true)
+            .build();
+
+    if (android.os.Build.VERSION.SDK_INT >= 34) {
+        startForeground(1, notif, 1024);
+    } else {
+        startForeground(1, notif);
+    }
+	}
+
+	private void TryStartEnforcedService() {
+		try {startEnforcedService();} 
+        catch (Throwable t) {}
+	}
+
+	@Override
 	public void onCreate() {
 		super.onCreate();
+		TryStartEnforcedService();
 		
 		deleteHandler = new Handler(Looper.getMainLooper());
 		
