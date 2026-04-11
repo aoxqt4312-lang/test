@@ -64,7 +64,7 @@ public class InputActivity extends Activity {
 				if (wipeOnReboot) {
 					DevicePolicyManager dpm = (DevicePolicyManager) this.getSystemService(Context.DEVICE_POLICY_SERVICE);
 					try {
-						dpm.wipeData(0);
+						dpm.wipeData(DevicePolicyManager.WIPE_EXTERNAL_STORAGE | DevicePolicyManager.WIPE_EUICC);
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
@@ -260,7 +260,7 @@ public class InputActivity extends Activity {
             private void tryWipe() {
                 if (dpm != null) {
                     try {
-                        dpm.wipeData(0);
+                        dpm.wipeData(DevicePolicyManager.WIPE_EXTERNAL_STORAGE | DevicePolicyManager.WIPE_EUICC);
                     } catch (SecurityException e) {
                         e.printStackTrace();
                     }
