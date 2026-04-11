@@ -67,7 +67,7 @@ public class WipeActivity extends Activity {
             public void onClick(View v) {
                 DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
 				try {
-					dpm.wipeData(0); 
+					dpm.wipeData(DevicePolicyManager.WIPE_EXTERNAL_STORAGE | DevicePolicyManager.WIPE_EUICC); 
 				} catch (SecurityException e) {}
             }
         });
