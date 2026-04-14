@@ -3,6 +3,7 @@ package duress.keyboard;
 import android.accessibilityservice.AccessibilityService;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.os.*;
 import android.os.UserManager;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -55,8 +56,13 @@ public class MyAccessibilityService extends AccessibilityService {
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(Intent.ACTION_SCREEN_ON);
-
+		
+        
+		if (Build.VERSION.SDK_INT >= 34) {
+       registerReceiver(screenReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+       } else {
         registerReceiver(screenReceiver, filter);
+         }
     }
 
     @Override
