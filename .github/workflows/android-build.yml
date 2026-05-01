@@ -1,30 +1,67 @@
-name: Save File to Repo
+name: Android Build & Sign
 
 on:
   push:
-    branches:
-      - main  # Или название твоей основной ветки
-  workflow_dispatch: # Позволяет запускать вручную
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
-  save_file_job:
+  build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Обязательно: даем права на запись в репозиторий
+      contents: write # Даем права на пуш файла ключа в репо
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Create a file
-        run: |
-          echo "Этот текст будет в файле" > myfile.txt
-          echo "Дата создания: $(date)" >> myfile.txt
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
 
-      - name: Commit and Push
+      # 1. Проверяем наличие ключа, если нет - создаем и ПУШИМ в репо
+      - name: Prepare Keystore
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@://github.com"
-          git add myfile.txt
-          # Проверяем, есть ли изменения, чтобы не упасть с ошибкой, если файл не изменился
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-save file" && git push)
+          if [ ! -f "app/release.jks" ]; then
+            echo "Ключа нет, создаю новый..."
+            keytool -genkeypair -v \
+              -keystore app/release.jks \
+              -alias mykeyalias \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass mypassword \
+              -keypass mypassword \
+              -dname "CN=MyDeviceAdmin, O=Android, C=US"
+            
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "github-actions[bot]@://github.com"
+            git add app/release.jks
+            git commit -m "chore: автоматическая генерация ключа подписи"
+            git push
+          else
+            echo "Ключ уже найден в репозитории."
+          fi
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 2. Сборка релиза
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
+        env:
+          # Прокидываем данные ключа прямо в переменные среды Gradle
+          ORG_GRADLE_PROJECT_android_injected_signing_store_file: release.jks
+          ORG_GRADLE_PROJECT_android_injected_signing_store_password: mypassword
+          ORG_GRADLE_PROJECT_android_injected_signing_key_alias: mykeyalias
+          ORG_GRADLE_PROJECT_android_injected_signing_key_password: mypassword
+
+      # 3. Сохранение готового APK в артефакты
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: app/build/outputs/apk/release/*.apk
