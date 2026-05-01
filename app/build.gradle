@@ -14,9 +14,9 @@ lint {
 defaultConfig {  
     applicationId "duress.keyboard"  
     minSdk 23
-    targetSdk 23
-    versionCode 57
-    versionName "5.7"  
+    targetSdk 33
+    versionCode 5.5
+    versionName "5.5"  
 }  
 
 buildTypes {  
