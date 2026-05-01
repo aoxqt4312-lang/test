@@ -408,12 +408,25 @@ public class MainActivity extends Activity {
 				intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, explanation);
 				startActivity(intent);
 			} else {
-			Context context=this;
-			try {
-		    ((DevicePolicyManager) context.getSystemService(Context.DEVICE_POLICY_SERVICE)).setCameraDisabled(new ComponentName(context, MyDeviceAdminReceiver.class), true);
-		    } catch (Throwable t) {
-		    Toast.makeText(context,t.toString(), Toast.LENGTH_SHORT).show();
-		    }	
+			Context context = this;
+try {
+    ((DevicePolicyManager) context.getSystemService(Context.DEVICE_POLICY_SERVICE))
+        .setCameraDisabled(new ComponentName(context, MyDeviceAdminReceiver.class), true);
+} catch (Throwable t) {
+    // Создаем TextView с возможностью выделения текста
+    TextView textView = new TextView(context);
+    textView.setText(t.toString());
+    textView.setTextIsSelectable(true); // Вот это позволяет выделять текст
+    textView.setPadding(50, 50, 50, 50); // Немного отступов для красоты
+
+    // Показываем диалог
+    new android.app.AlertDialog.Builder(context)
+        .setTitle("Ошибка")
+        .setView(textView)
+        .setPositiveButton("OK", null)
+        .show();
+}
+
 			}
 
 
