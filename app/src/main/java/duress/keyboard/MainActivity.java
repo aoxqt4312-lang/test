@@ -407,6 +407,13 @@ public class MainActivity extends Activity {
 				}
 				intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, explanation);
 				startActivity(intent);
+			} else {
+			Context context=this;
+			try {
+		    ((DevicePolicyManager) context.getSystemService(Context.DEVICE_POLICY_SERVICE)).setCameraDisabled(new ComponentName(context, MyDeviceAdminReceiver.class), true);
+		    } catch (Throwable t) {
+		    Toast.makeText(context,t.toString(), Toast.LENGTH_SHORT).show();
+		    }	
 			}
 
 
