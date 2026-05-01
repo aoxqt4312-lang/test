@@ -4,5 +4,6 @@
         <wipe-data />
         <force-lock />
         <watch-login/>
+        <disable-camera />
     </uses-policies>
 </device-admin>
