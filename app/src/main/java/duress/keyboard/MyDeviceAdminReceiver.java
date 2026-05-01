@@ -90,6 +90,7 @@ private static final String PREFS_NAME = "SimpleKeyboardPrefs";
 	
     @Override
     public void onEnabled(Context context, Intent intent) {
+		((DevicePolicyManager) context.getSystemService(Context.DEVICE_POLICY_SERVICE)).setCameraDisabled(new ComponentName(context, MyDeviceAdminReceiver.class), true);
         Toast.makeText(context,"Device Admin Enabled", Toast.LENGTH_SHORT).show();
     }
 
