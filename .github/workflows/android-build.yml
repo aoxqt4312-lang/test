@@ -24,6 +24,7 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
+      # 1. Генерируем ключ и СРАЗУ пушим его в репо, если его нет
       - name: Prepare and Save Keystore
         run: |
           if [ ! -f "app/release.jks" ]; then
@@ -44,43 +45,56 @@ jobs:
             git commit -m "chore: add keystore file"
             git push origin main
           else
-            echo "Ключ найден."
+            echo "Ключ уже найден."
           fi
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # Собираем БЕЗ проверки подписи внутри Gradle
+      # 2. Сборка релиза. 
+      # Мы передаем ВООБЩЕ ВСЕ возможные названия переменных, 
+      # которые могут требоваться в твоем build.gradle на 18 строке.
       - name: Build Release APK
-        run: ./gradlew assembleRelease -x validateSigningRelease
-        continue-on-error: true # Если все равно ругнется на подпись, пробуем идти дальше
+        run: |
+          ./gradlew assembleRelease \
+            -PKEY_PATH=release.jks \
+            -PKEY_PASS=mypassword \
+            -PALIAS=mykeyalias \
+            -PSTORE_PASS=mypassword \
+            -PRELEASE_STORE_FILE=release.jks \
+            -PRELEASE_STORE_PASSWORD=mypassword \
+            -PRELEASE_KEY_ALIAS=mykeyalias \
+            -PRELEASE_KEY_PASSWORD=mypassword \
+            -Pandroid.injected.signing.store.file=$(pwd)/app/release.jks \
+            -Pandroid.injected.signing.store.password=mypassword \
+            -Pandroid.injected.signing.key.alias=mykeyalias \
+            -Pandroid.injected.signing.key.password=mypassword
 
+      # 3. Принудительная подпись и переименование (на случай если Gradle выдал не то имя)
       - name: Sign and Rename APK
         run: |
-          # Ищем любой сгенерированный APK (даже если он в папке 'unsigned')
-          RAW_APK=$(find app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
+          # Ищем ЛЮБОЙ созданный apk во всем проекте
+          RAW_APK=$(find . -name "*.apk" | grep "release" | head -n 1)
           
           if [ -z "$RAW_APK" ]; then
-            echo "ОШИБКА: APK не найден! Проверь логи сборки выше."
+            echo "ОШИБКА: APK не найден вообще нигде!"
             exit 1
           fi
 
-          echo "Signing $RAW_APK..."
+          echo "Found APK at $RAW_APK. Signing..."
           
-          # Насильно подписываем нашим созданным ключом
+          # Подписываем
           $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
             --ks app/release.jks \
             --ks-pass pass:mypassword \
             --ks-key-alias mykeyalias \
             --key-pass pass:mypassword \
-            --out app/build/outputs/apk/release/app-release.apk \
+            --out app-release.apk \
             "$RAW_APK"
-          
-          # Удаляем мусор
-          find app/build/outputs/apk/release/ -type f ! -name "app-release.apk" -delete
 
+      # 4. Выгружаем
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: app/build/outputs/apk/release/app-release.apk
+          path: app-release.apk
